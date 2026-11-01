@@ -20,7 +20,7 @@ type Status = {
   locked: boolean;
   needsPin: boolean;
   llm: boolean;
-  provider: 'openai' | 'groq' | null;
+  provider: 'openai' | 'groq' | 'ollama' | null;
   stt: boolean;
   db: boolean;
 };
@@ -30,6 +30,73 @@ const greeting: Msg = {
   role: 'jarvis',
   text: 'Systems online. I am J.A.R.V.I.S. Speak or type a command.',
 };
+
+function Reactor({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={compact ? 'orb compact' : 'orb'} aria-hidden="true">
+      <svg className="reactor" viewBox="0 0 400 400">
+        <defs>
+          <radialGradient id="well" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#12384c" />
+            <stop offset="70%" stopColor="#071018" />
+            <stop offset="100%" stopColor="#03070b" />
+          </radialGradient>
+          <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#d5dee6" />
+            <stop offset="35%" stopColor="#6d7c89" />
+            <stop offset="68%" stopColor="#c5d0d8" />
+            <stop offset="100%" stopColor="#4e5c68" />
+          </linearGradient>
+          <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f4fbff" />
+            <stop offset="45%" stopColor="#9eb0be" />
+            <stop offset="100%" stopColor="#e7f3f8" />
+          </linearGradient>
+          <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <circle cx="200" cy="200" r="156" fill="url(#well)" />
+        <circle cx="200" cy="200" r="186" fill="none" stroke="url(#metal)" strokeWidth="26" />
+        <circle cx="200" cy="200" r="186" fill="none" stroke="#070b10" strokeWidth="28" strokeDasharray="10 86" />
+        <circle cx="200" cy="200" r="174" fill="none" stroke="#9aabB8" strokeWidth="1" opacity="0.7" />
+        <circle cx="200" cy="200" r="198" fill="none" stroke="#8b9aa6" strokeWidth="2" />
+
+        <g className="reactor-spin" filter="url(#glow)">
+          <circle cx="200" cy="200" r="158" fill="none" stroke="#35c8ff" strokeWidth="9" strokeDasharray="54 18 92 26 40 70" strokeLinecap="butt" />
+          <circle cx="200" cy="200" r="142" fill="none" stroke="#7adfff" strokeWidth="3" strokeDasharray="8 10" opacity="0.8" />
+          <circle cx="200" cy="200" r="128" fill="none" stroke="#1ec6ff" strokeWidth="7" strokeDasharray="36 22 70 48" />
+        </g>
+
+        <g filter="url(#glow)">
+          <circle cx="200" cy="200" r="186" fill="none" stroke="#ff3b3b" strokeWidth="4" strokeDasharray="16 270" transform="rotate(-40 200 200)" />
+          <circle cx="200" cy="200" r="186" fill="none" stroke="#ff3b3b" strokeWidth="4" strokeDasharray="16 270" transform="rotate(48 200 200)" />
+          <circle cx="200" cy="200" r="186" fill="none" stroke="#ff3b3b" strokeWidth="4" strokeDasharray="16 270" transform="rotate(150 200 200)" />
+          <circle cx="200" cy="200" r="186" fill="none" stroke="#ff3b3b" strokeWidth="4" strokeDasharray="16 270" transform="rotate(230 200 200)" />
+        </g>
+
+        <circle cx="200" cy="200" r="108" fill="none" stroke="#7ad8ff" strokeWidth="1" opacity="0.55" />
+        <circle cx="200" cy="200" r="108" fill="none" stroke="#9ae7ff" strokeWidth="3" strokeDasharray="2 7" opacity="0.7" />
+
+        <g filter="url(#glow)">
+          <polygon points="200,118 252,214 148,214" fill="none" stroke="#d7e7ef" strokeWidth="3" />
+          <polygon points="200,136 236,206 164,206" fill="none" stroke="#8fdfff" strokeWidth="2" />
+          <polygon points="200,154 220,198 180,198" fill="rgba(80,210,255,0.18)" stroke="#e9fbff" strokeWidth="1.4" />
+          <circle className="reactor-core" cx="200" cy="184" r="7" fill="#f7fdff" />
+        </g>
+
+        <text className="reactor-word" x="200" y="248" textAnchor="middle">
+          JARVIS
+        </text>
+      </svg>
+    </div>
+  );
+}
 
 export function CommandCenter() {
   const [messages, setMessages] = useState<Msg[]>([greeting]);
@@ -199,12 +266,9 @@ export function CommandCenter() {
   if (!status) {
     return (
       <main className="lock">
-        <div className="orb compact">
-          <div className="ring ring1" />
-          <div className="ring ring2" />
-          <div className="ring ring3" />
-          <div className="core">J</div>
-        </div>
+        <div className="atmosphere" />
+        <Reactor compact />
+        <p className="kicker">MARK IV • SECURE CHANNEL</p>
         <h1>INITIALIZING</h1>
         <p>Bringing the command center online.</p>
       </main>
@@ -214,14 +278,11 @@ export function CommandCenter() {
   if (status.locked) {
     return (
       <main className="lock">
-        <div className="orb compact">
-          <div className="ring ring1" />
-          <div className="ring ring2" />
-          <div className="ring ring3" />
-          <div className="core">J</div>
-        </div>
+        <div className="atmosphere" />
+        <Reactor compact />
+        <p className="kicker">MARK IV • SECURE CHANNEL</p>
         <h1>RESTRICTED ACCESS</h1>
-        <p>Enter the command-center PIN to continue.</p>
+        <p>Identify yourself to enter the command center.</p>
         <form onSubmit={unlock} className="pin-form">
           <input
             inputMode="numeric"
@@ -230,42 +291,53 @@ export function CommandCenter() {
             onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 8))}
             placeholder="Access code"
           />
-          <button type="submit" onClick={() => void unlock()}>Unlock</button>
+          <button type="submit" onClick={() => void unlock()}>
+            Unlock
+          </button>
         </form>
         {error ? <p className="error">{error}</p> : null}
       </main>
     );
   }
 
+  const headline =
+    mode === 'listening' ? 'Listening' : mode === 'thinking' ? 'Processing' : mode === 'speaking' ? 'Speaking' : 'Awaiting command';
+
   return (
-    <main>
+    <main className={mode}>
+      <div className="atmosphere" />
       <header>
         <div className="brand">
           <span className="brandmark">◈</span>
           <div>
             <strong>J.A.R.V.I.S.</strong>
-            <small>PERSONAL INTELLIGENCE SYSTEM</small>
+            <small>Personal intelligence system</small>
           </div>
         </div>
-        <div className="online">
-          <span /> {status?.llm ? 'NEURAL CORE ONLINE' : 'AWAITING API KEY'}
+        <div className="header-meta">
+          <span className="chip">{time || '--:--:--'}</span>
+          <div className={`online ${status.llm ? 'live' : ''}`}>
+            <span /> {status.llm ? 'Neural core online' : 'Awaiting key'}
+          </div>
         </div>
       </header>
 
       <div className="layout">
         <aside>
-          <div className="section">SYSTEM MODULES</div>
-          {modules.map(([Icon, label, state]) => (
+          <div className="section">System modules</div>
+          {modules.map(([Icon, label, state], index) => (
             <div className="module" key={label}>
-              <Icon size={19} />
+              <em>{String(index + 1).padStart(2, '0')}</em>
+              <Icon size={16} />
               <div>
                 <b>{label}</b>
                 <small>{state}</small>
               </div>
             </div>
           ))}
-          <div className="section sessions">RECENT SESSIONS</div>
+          <div className="section sessions">Recent sessions</div>
           <div className="session-list">
+            {conversations.length === 0 ? <p className="empty">No prior sessions</p> : null}
             {conversations.map((item) => (
               <button
                 key={item.id}
@@ -276,68 +348,59 @@ export function CommandCenter() {
               </button>
             ))}
           </div>
-          <div className="foot">BUILD 1.0.0 • HOSTED COMMAND CENTER</div>
+          <div className="foot">Build 1.0 · Hosted command center</div>
         </aside>
 
-        <section className={`center ${mode}`}>
-          <div className="eyebrow">ARTIFICIAL INTELLIGENCE • CENTRAL CORE</div>
-          <div className="orb">
-            <div className="ring ring1" />
-            <div className="ring ring2" />
-            <div className="ring ring3" />
-            <div className="core">J</div>
-          </div>
-          <h1>
-            {mode === 'listening'
-              ? 'LISTENING'
-              : mode === 'thinking'
-                ? 'PROCESSING'
-                : mode === 'speaking'
-                  ? 'SPEAKING'
-                  : 'AWAITING YOUR COMMAND'}
-          </h1>
+        <section className="center">
+          <div className="eyebrow">Central core</div>
+          <Reactor />
+          <h1>{headline}</h1>
           <p>
-            {status?.llm
-              ? 'Voice-enabled command center. Tap the mic on your phone and talk.'
-              : 'Neural core is starting. If this stays offline, launch Ollama or add an API key.'}
+            {status.llm
+              ? 'Speak into the link, or enter a command below.'
+              : 'Neural core is standing by for an API key.'}
           </p>
           <div className="stats">
             <div>
-              <span>CORE STATUS</span>
-              <b>{status?.llm ? 'READY' : 'OFFLINE'}</b>
+              <span>Core</span>
+              <b>{status.llm ? 'Ready' : 'Offline'}</b>
             </div>
             <div>
-              <span>LOCAL TIME</span>
-              <b>{time}</b>
+              <span>Voice</span>
+              <b>{mode === 'idle' ? 'Standby' : headline}</b>
             </div>
             <div>
-              <span>MEMORY</span>
-              <b>{status?.db ? 'ON' : 'OFF'}</b>
+              <span>Memory</span>
+              <b>{status.db ? 'Synced' : 'Offline'}</b>
             </div>
           </div>
         </section>
 
         <section className="chat">
           <div className="chathead">
-            <span>COMMUNICATIONS</span>
+            <span>Communications</span>
             <div className="chat-actions">
               <button type="button" onClick={newSession} title="New session">
-                <Plus size={16} />
+                <Plus size={15} />
               </button>
-              <Clock3 size={16} />
+              <Clock3 size={15} />
             </div>
           </div>
           <div className="messages">
             {messages.map((message, index) => (
               <div className={`message ${message.role}`} key={`${message.role}-${index}`}>
-                <small>{message.role === 'jarvis' ? 'J.A.R.V.I.S.' : 'YOU'}</small>
+                <small>{message.role === 'jarvis' ? 'J.A.R.V.I.S.' : 'You'}</small>
                 <p>{message.text}</p>
               </div>
             ))}
             {mode === 'thinking' ? (
               <div className="message jarvis">
                 <small>J.A.R.V.I.S.</small>
-                <p>Working.</p>
+                <p className="thinking">
+                  <i />
+                  <i />
+                  <i />
+                </p>
               </div>
             ) : null}
             <div ref={endRef} />
@@ -350,16 +413,16 @@ export function CommandCenter() {
             }}
           >
             <button type="button" onClick={() => void voice()} title="Speak" className={mode === 'listening' ? 'hot' : ''}>
-              <Mic size={19} />
+              <Mic size={18} />
             </button>
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Enter a command..."
+              placeholder="Enter a command"
               disabled={busy}
             />
             <button type="submit" title="Send" disabled={busy}>
-              <Send size={19} />
+              <Send size={16} />
             </button>
           </form>
         </section>
